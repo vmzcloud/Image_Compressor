@@ -116,6 +116,51 @@
             margin-bottom: 20px;
         }
 
+        .format-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .format-label {
+            font-weight: 600;
+            color: #333;
+            min-width: 80px;
+        }
+
+        .format-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .format-option:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .format-option.active {
+            border-color: #667eea;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .format-radio {
+            display: none;
+        }
+
         .quality-label {
             font-weight: 600;
             color: #333;
@@ -495,6 +540,20 @@
                 <span class="quality-value" id="qualityValue">80%</span>
             </div>
             
+            <div class="format-control">
+                <label class="format-label">Format:</label>
+                <div class="format-options">
+                    <label class="format-option active" for="formatJpg">
+                        <input type="radio" class="format-radio" id="formatJpg" name="outputFormat" value="jpeg" checked>
+                        <span>JPG</span>
+                    </label>
+                    <label class="format-option" for="formatPng">
+                        <input type="radio" class="format-radio" id="formatPng" name="outputFormat" value="png">
+                        <span>PNG</span>
+                    </label>
+                </div>
+            </div>
+            
             <div class="action-buttons">
                 <button class="compress-btn" id="compressBtn">Compress All Images</button>
                 <button class="download-all-btn" id="downloadAllBtn" disabled>Download All</button>
@@ -526,6 +585,8 @@
         const fileCount = document.getElementById('fileCount');
         const qualitySlider = document.getElementById('qualitySlider');
         const qualityValue = document.getElementById('qualityValue');
+        const formatOptions = document.querySelectorAll('.format-option');
+        const formatRadios = document.querySelectorAll('input[name="outputFormat"]');
         const compressBtn = document.getElementById('compressBtn');
         const downloadAllBtn = document.getElementById('downloadAllBtn');
         const clearBtn = document.getElementById('clearBtn');
@@ -545,6 +606,20 @@
         qualitySlider.addEventListener('input', (e) => {
             qualityValue.textContent = e.target.value + '%';
         });
+        
+        // Format option event listeners
+        formatOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const radio = option.querySelector('input[type="radio"]');
+                radio.checked = true;
+                updateFormatSelection();
+            });
+        });
+        
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', updateFormatSelection);
+        });
+        
         compressBtn.addEventListener('click', compressAllImages);
         downloadAllBtn.addEventListener('click', downloadAllImages);
         clearBtn.addEventListener('click', clearAllFiles);
@@ -595,6 +670,17 @@
             updateUI();
         }
 
+        function updateFormatSelection() {
+            formatOptions.forEach(option => {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio.checked) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+        }
+
         function updateUI() {
             const fileCountText = files.length === 1 ? '1 file selected' : `${files.length} files selected`;
             fileCount.textContent = fileCountText;
@@ -641,7 +727,7 @@
                         <div class="image-label">Compressed</div>
                         ${fileItem.compressedBlob ? 
                             `<img src="${URL.createObjectURL(fileItem.compressedBlob)}" alt="Compressed">
-                             <div class="image-info">${formatFileSize(fileItem.compressedSize)}</div>` :
+                             <div class="image-info">${formatFileSize(fileItem.compressedSize)} • ${fileItem.outputFormat?.toUpperCase() || 'JPG'}</div>` :
                             `<div style="height: 120px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999;">
                                 <span>Not compressed</span>
                              </div>
@@ -671,6 +757,7 @@
             progressSection.style.display = 'block';
             
             const quality = qualitySlider.value / 100;
+            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
             let processed = 0;
 
             for (let i = 0; i < files.length; i++) {
@@ -686,9 +773,10 @@
                 updateProgress(processed, files.length);
 
                 try {
-                    const compressedBlob = await compressImage(fileItem.file, quality);
+                    const compressedBlob = await compressImage(fileItem.file, quality, outputFormat);
                     fileItem.compressedBlob = compressedBlob;
                     fileItem.compressedSize = compressedBlob.size;
+                    fileItem.outputFormat = outputFormat;
                     fileItem.status = 'completed';
                     
                     if (!processedFiles.find(f => f.id === fileItem.id)) {
@@ -712,7 +800,7 @@
             updateStatsSummary();
         }
 
-        function compressImage(file, quality) {
+        function compressImage(file, quality, outputFormat = 'jpeg') {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -723,13 +811,16 @@
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
 
+                    const mimeType = outputFormat === 'png' ? 'image/png' : 'image/jpeg';
+                    const compressionQuality = outputFormat === 'png' ? undefined : quality;
+                    
                     canvas.toBlob((blob) => {
                         if (blob) {
                             resolve(blob);
                         } else {
                             reject(new Error('Failed to compress image'));
                         }
-                    }, 'image/jpeg', quality);
+                    }, mimeType, compressionQuality);
                 };
 
                 img.onerror = () => reject(new Error('Failed to load image'));
@@ -750,7 +841,7 @@
                     compressedPreview.innerHTML = `
                         <div class="image-label">Compressed</div>
                         <img src="${URL.createObjectURL(fileItem.compressedBlob)}" alt="Compressed">
-                        <div class="image-info">${formatFileSize(fileItem.compressedSize)}</div>
+                        <div class="image-info">${formatFileSize(fileItem.compressedSize)} • ${fileItem.outputFormat?.toUpperCase() || 'JPG'}</div>
                     `;
                     
                     const downloadBtn = element.querySelector('.download-btn');
@@ -813,7 +904,9 @@
             
             const nameWithoutExt = fileItem.file.name.replace(/\.[^/.]+$/, '');
             const quality = qualitySlider.value;
-            link.download = `${nameWithoutExt}_compressed_${quality}.jpg`;
+            const extension = fileItem.outputFormat === 'png' ? 'png' : 'jpg';
+            const qualitySuffix = fileItem.outputFormat === 'png' ? '' : `_${quality}`;
+            link.download = `${nameWithoutExt}_compressed${qualitySuffix}.${extension}`;
             
             document.body.appendChild(link);
             link.click();
