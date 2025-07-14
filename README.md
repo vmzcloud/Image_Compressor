@@ -11,7 +11,7 @@ A powerful, client-side web application for compressing multiple images simultan
 - **Parallel processing**: Efficient handling of multiple files
 
 ### 🎛️ **Advanced Controls**
-- **Quality slider**: Adjustable compression quality (10-100%)
+- **Quality slider**: Adjustable compression quality (1-100%)
 - **Format selection**: Choose between JPEG and PNG output formats
 - **Universal settings**: Apply same settings to all images
 - **Individual management**: Remove or download specific files
@@ -131,7 +131,7 @@ The application is fully responsive and optimized for mobile devices:
 ## 🔧 Advanced Features
 
 ### Compression Options
-- **Quality control**: Fine-tune compression from 10% to 100%
+- **Quality control**: Fine-tune compression from 1% to 100%
 - **Format conversion**: Convert between JPEG and PNG formats
 - **Batch settings**: Apply uniform settings across all images
 - **Real-time preview**: See results before downloading
@@ -166,7 +166,7 @@ The application is fully responsive and optimized for mobile devices:
 
 ### Optimal Usage
 - **Batch size**: Process 10-20 images at once for best performance
-- **Quality settings**: Use 70-80% for web, 90%+ for print quality
+- **Quality settings**: Use 1-30% for maximum compression, 70-80% for web, 90%+ for print quality
 - **File sizes**: Works best with images under 50MB each
 - **Browser choice**: Chrome and Firefox provide optimal performance
 
